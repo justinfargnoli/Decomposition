@@ -1,7 +1,11 @@
+
+
 #[cfg(test)]
-mod tests {
+pub mod tests {
+    use super::*;
+
     #[test]
-    fn it_works() {
+    pub fn it_works() {
         assert_eq!(2 + 2, 4);
     }
 }
