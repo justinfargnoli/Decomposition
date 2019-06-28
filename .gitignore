@@ -6,3 +6,6 @@ Cargo.lock
 #Added by IntelliJ
 .idea
 
+#Added by Mac
+.DS_Store
+
