@@ -1,7 +1,5 @@
 mod histogram;
 
-
-
 #[cfg(test)]
 pub mod tests {
     use super::*;

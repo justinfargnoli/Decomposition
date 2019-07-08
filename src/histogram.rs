@@ -1,4 +1,6 @@
-use std::hash::{Hash, Hasher}; //Used for custom bucket hashing
+use std::hash::{Hash, Hasher};
+
+//Used for custom bucket hashing
 
 pub struct Histogram<T> {
     sublog_bits: u64,    //Stores sublog bits
@@ -8,12 +10,12 @@ pub struct Histogram<T> {
 
 impl Histogram<u64> //Implements methods for a histogram with numeric frequencies
 {
-    pub fn new_single(sb: u64, mrt: u64) -> Histogram<u64> //Constructor that takes in the sublog bits and the maximum reuse time
+    pub fn new_single(sublog_bits: u64, max_reuse_time: u64) -> Histogram<u64> //Constructor that takes in the sublog bits and the maximum reuse time
     {
         Histogram {
-            sublog_bits: sb,
-            max_reuse_time: mrt,
-            values: vec![0; (convert_value_to_index(mrt, sb) + 1) as usize],
+            sublog_bits,
+            max_reuse_time,
+            values: vec![0; (convert_value_to_index(max_reuse_time, sublog_bits) + 1) as usize],
         } //Creates a histogram with a vector of an appropriate fixed length
     }
 
@@ -21,10 +23,7 @@ impl Histogram<u64> //Implements methods for a histogram with numeric frequencie
         if reuse_time <= self.max_reuse_time && reuse_time >= 1
         //Makes sure the reuse time is in range
         {
-            let frequency =
-                self.values[convert_value_to_index(reuse_time, self.sublog_bits) as usize].clone(); //Retrieves old frequency
-            self.values[convert_value_to_index(reuse_time, self.sublog_bits) as usize] =
-                frequency + 1; //Sets bucket value to incremented frequency
+            self.values[convert_value_to_index(reuse_time, self.sublog_bits) as usize] += 1; //Retrieves old frequency
         } else {
             panic!(
                 "reuse time {} out of bounds [{}, {}]",
@@ -74,13 +73,15 @@ impl Histogram<u64> //Implements methods for a histogram with numeric frequencie
 
 impl Histogram<(u64, u64, u64, u64)> //Implements methods for the histogram
 {
-    pub fn new_tuple(sb: u64, mrt: u64) -> Histogram<(u64, u64, u64, u64)> //Constructor that takes in the sublog bits and the maximum reuse time
+    pub fn new_tuple(sublog_bits: u64, max_reuse_time: u64) -> Histogram<(u64, u64, u64, u64)> //Constructor that takes in the sublog bits and the maximum reuse time
     {
-        let mut values = vec![(0, 0, 0, 0); (convert_value_to_index(mrt, sb) + 1) as usize]; //Creates a vector of empty tuples
-        for i in 1..=mrt
-        //Iterates through all possibel reuse times
+        let mut values = vec![(0, 0, 0, 0);
+                              (convert_value_to_index(max_reuse_time, sublog_bits) + 1) as usize]; //Creates a vector of empty tuples
+
+        for i in 1..=max_reuse_time
+            //Iterates through all possible reuse times
         {
-            let bucket = convert_value_to_index(i, sb); //Indexes vector
+            let bucket = convert_value_to_index(i, sublog_bits); //Indexes vector
             if values[bucket].0 == 0
             //Checks if bucket hasn't been processed
             {
@@ -88,9 +89,10 @@ impl Histogram<(u64, u64, u64, u64)> //Implements methods for the histogram
             }
             values[bucket].1 = i; //Sets max to current reuse time
         }
+
         Histogram {
-            sublog_bits: sb,
-            max_reuse_time: mrt,
+            sublog_bits,
+            max_reuse_time,
             values,
         } //Creates a histogram with the appropriate vector
     }
@@ -197,7 +199,7 @@ pub fn convert_value_to_index(value: u64, sublog_bits: u64) -> usize //Taken fro
     let mut index = value >> shift; //Sets index as value shifted by shift
     index = index & ((1 << sublog_bits) - 1); //Does a bitwise and with sublog bits number of 1's
 
-    (index + ((shift + 1) << sublog_bits)) as usize //Adds the shift + 1 shfted by the number of sublogg bits and to the index
+    (index + ((shift + 1) << sublog_bits)) as usize //Adds the shift + 1 shifted by the number of sublog bits and to the index
 }
 
 // pub fn convert_index_to_value(index: u64, sublog_bits: u64) -> u64     //Not working yet
@@ -215,8 +217,11 @@ pub fn convert_value_to_index(value: u64, sublog_bits: u64) -> usize //Taken fro
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
-    use std::collections::HashMap;  //Can be used with bucket to create sublog histograms
+
+//Can be used with bucket to create sublog histograms
 
     #[test]
     fn test_clone() //Tests clone equality
