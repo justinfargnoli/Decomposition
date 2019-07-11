@@ -1,4 +1,5 @@
 mod histogram;
+mod reader;
 
 #[cfg(test)]
 pub mod tests {
