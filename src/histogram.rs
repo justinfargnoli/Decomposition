@@ -47,7 +47,7 @@ impl Histogram<u64> {
                 Err(e) => panic!("An error occurred when reading a frequency from the data file: \n\t {}", e),
             };
             let frequency: u64 = frequency.parse().unwrap();
-            histogram_struct.insert(index, frequency);
+            histogram_struct.set_frequency_via_index(index, frequency);
             index += 1;
         }
 
@@ -75,7 +75,7 @@ impl Histogram<u64> {
     /*
      * Inserts a value into the histogram at a given reuse time
      */
-    fn insert(&mut self, index: usize, frequency: u64) {
+    pub fn set_frequency_via_index(&mut self, index: usize, frequency: u64) {
         // Sets bucket value to frequency
         self.values[index] = frequency;
     }
@@ -102,11 +102,7 @@ impl Histogram<u64> {
         self.sublog_bits
     }
 
-
-    /****   Methods for tests.    ****/
-
-
-    fn add(&mut self, reuse_time: u64) {
+    pub fn add(&mut self, reuse_time: u64) {
         //Retrieves old frequency
         self.values[convert_value_to_index(self.sublog_bits, reuse_time) as usize] += 1;
     }
@@ -114,7 +110,7 @@ impl Histogram<u64> {
     /*
      * Inserts a value into the histogram at a given reuse time
      */
-    fn insert_via_reuse_time(&mut self, reuse_time: u64, frequency: u64) {
+    pub fn set_frequency_via_reuse_time(&mut self, reuse_time: u64, frequency: u64) {
         self.values[convert_value_to_index(self.sublog_bits, reuse_time) as usize] = frequency;
     }
 }
@@ -177,7 +173,7 @@ mod tests {
     fn test_histogram_insertion() //Tests histogram buckets
     {
         let mut h = Histogram::new_single(8); //Creates a new histogram for given sublog bits and maximum reuse time
-        h.insert_via_reuse_time(512, 2); //Inserts a value into the same bucket
+        h.set_frequency_via_reuse_time(512, 2); //Inserts a value into the same bucket
         assert_eq!(h.get_frequency(513), 2); //Checks the bucket value
     }
 
@@ -232,7 +228,7 @@ mod tests {
             //Fills each bucket with its bucket size
             {
                 let temp = h1.get_frequency(i);
-                h1.insert_via_reuse_time(i, temp + 1);
+                h1.set_frequency_via_reuse_time(i, temp + 1);
             }
 
         let values = h1.get_histgram_vec(); //Retrieves histogram values
