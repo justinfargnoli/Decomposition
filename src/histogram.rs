@@ -16,53 +16,6 @@ pub struct Histogram<T> {
  * Implements methods for a histogram with numeric frequencies
  */
 impl Histogram<u64> {
-    /*
-     * Constructor that takes in the sublog bits and the maximum reuse time
-     */
-    pub fn new_single(sublog_bits: u64) -> Histogram<u64> {
-        //Creates a histogram with a vector of an appropriate fixed length
-        Histogram {
-            sublog_bits,
-            values: vec![0; Histogram::sublog_to_histogram_size(sublog_bits) as usize],
-        }
-    }
-
-    /*
-     * Formula taken from the loca projects 'dual_fp_all.cpp' file.
-     */
-    fn sublog_to_histogram_size(sublog_bits: u64) -> u64 {
-        (65 - sublog_bits) * (1 << sublog_bits)
-    }
-
-    /*
-     * Inserts a value into the histogram at a given reuse time
-     */
-    pub fn insert(&mut self, index: usize, frequency: u64) {
-        // Sets bucket value to frequency
-        self.values[index] = frequency;
-    }
-
-    /*
-     * Retreives the frequency value at a given reuse time.
-     */
-    pub fn get_frequency(&self, reuse_time: u64) -> u64 {
-        // Returns the frequency in the reuse time's bucket
-        self.values[convert_value_to_index(self.sublog_bits, reuse_time) as usize]
-    }
-
-    /*
-     * Returns copy of internal vector
-     */
-    pub fn get_histgram_vec(&self) -> Vec<u64> {
-        self.values.clone()
-    }
-
-    /*
-     * Returns the value of sublog_bits
-     */
-    pub fn get_sublog_bits(&self) -> u64 {
-        self.sublog_bits
-    }
 
     pub fn read_histogram_from_file(file_name: String) -> Histogram<u64> {
         let file: File = match File::open(file_name) {
@@ -102,8 +55,56 @@ impl Histogram<u64> {
     }
 
     /*
-        Functions for tests.
-    */
+     * Constructor that takes in the sublog bits and the maximum reuse time
+     */
+    fn new_single(sublog_bits: u64) -> Histogram<u64> {
+        //Creates a histogram with a vector of an appropriate fixed length
+        Histogram {
+            sublog_bits,
+            values: vec![0; Histogram::sublog_to_histogram_size(sublog_bits) as usize],
+        }
+    }
+
+    /*
+     * Formula taken from the loca projects 'dual_fp_all.cpp' file.
+     */
+    fn sublog_to_histogram_size(sublog_bits: u64) -> u64 {
+        (65 - sublog_bits) * (1 << sublog_bits)
+    }
+
+    /*
+     * Inserts a value into the histogram at a given reuse time
+     */
+    fn insert(&mut self, index: usize, frequency: u64) {
+        // Sets bucket value to frequency
+        self.values[index] = frequency;
+    }
+
+    /*
+     * Retreives the frequency value at a given reuse time.
+     */
+    pub fn get_frequency(&self, reuse_time: u64) -> u64 {
+        // Returns the frequency in the reuse time's bucket
+        self.values[convert_value_to_index(self.sublog_bits, reuse_time) as usize]
+    }
+
+    /*
+     * Returns copy of internal vector
+     */
+    pub fn get_histgram_vec(&self) -> Vec<u64> {
+        self.values.clone()
+    }
+
+    /*
+     * Returns the value of sublog_bits
+     */
+    pub fn get_sublog_bits(&self) -> u64 {
+        self.sublog_bits
+    }
+
+
+    /****   Methods for tests.    ****/
+
 
     fn add(&mut self, reuse_time: u64) {
         //Retrieves old frequency
