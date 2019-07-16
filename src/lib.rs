@@ -1,5 +1,6 @@
 pub mod histogram;
 pub mod distribution;
+pub mod cycle;
 
 //#[cfg(test)]
 //pub mod tests {
