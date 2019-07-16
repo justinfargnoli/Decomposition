@@ -6,17 +6,17 @@ Adapted from 'https://github.com/danielbusaba/histogram'.
 */
 
 
-pub struct Histogram<T> {
+pub struct Histogram {
     sublog_bits: u64,
     // Stores sublog bits
-    values: Vec<T>,      // Stores frequency values for histogram
+    values: Vec<u128>,      // Stores frequency values for histogram
 }
 
 /*
  * Implements methods for a histogram with numeric frequencies
  */
-impl Histogram<u128> {
-    pub fn read_histogram_from_file(file_name: String) -> Histogram<u128> {
+impl Histogram {
+    pub fn read_histogram_from_file(file_name: String) -> Histogram {
         let file: File = match File::open(file_name) {
             Ok(t) => t,
             Err(e) => panic!("An error when creating the File struct: \n\t {}", e),
@@ -34,20 +34,18 @@ impl Histogram<u128> {
             None => panic!("None was returned when reading the the value of sublog_bits."),
         };
         let sublog_bits: u64 = sublog_bits.parse().unwrap();
-        let mut histogram_struct: Histogram<u128> = Histogram::new_single(sublog_bits);
+        let mut histogram_struct: Histogram = Histogram::new_single(sublog_bits);
 
         lines.next(); // Passes over the number of buckets in the sublog histogram
         // because Histogram does not need that information
 
-        let mut index: usize = 0;
-        for line in lines {
+        for (i, line) in lines.enumerate() {
             let frequency: String = match line {
                 Ok(t) => t,
                 Err(e) => panic!("An error occurred when reading a frequency from the data file: \n\t {}", e),
             };
             let frequency: u128 = frequency.parse().unwrap();
-            histogram_struct.set_frequency_via_index(index, frequency);
-            index += 1;
+            histogram_struct.set_frequency_via_index(i, frequency);
         }
 
         histogram_struct
@@ -56,7 +54,7 @@ impl Histogram<u128> {
     /*
      * Constructor that takes in the sublog bits and the maximum reuse time
      */
-    fn new_single(sublog_bits: u64) -> Histogram<u128> {
+    fn new_single(sublog_bits: u64) -> Histogram {
         //Creates a histogram with a vector of an appropriate fixed length
         Histogram {
             sublog_bits,
@@ -69,6 +67,10 @@ impl Histogram<u128> {
      */
     fn sublog_to_histogram_size(sublog_bits: u64) -> u128 {
         (65 - sublog_bits) as u128 * (1 << (sublog_bits as u128))
+    }
+
+    pub fn size(&self) -> usize {
+        self.values.len()
     }
 
     /*
@@ -90,7 +92,7 @@ impl Histogram<u128> {
     /*
      * Returns copy of internal vector
      */
-    pub fn get_histgram_vec(&self) -> Vec<u128> {
+    pub fn get_histogram_vec(&self) -> Vec<u128> {
         self.values.clone()
     }
 
@@ -230,7 +232,7 @@ mod tests {
                 h1.set_frequency_via_reuse_interval(i, temp + 1);
             }
 
-        let values = h1.get_histgram_vec(); //Retrieves histogram values
+        let values = h1.get_histogram_vec(); //Retrieves histogram values
         for i in 1..=7
             //Iterates through histogram
             {
@@ -254,7 +256,7 @@ mod tests {
     #[test]
     fn read_test_hist_for_sublog_bits() {
         let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/test.hist");
-        let histrogram: Histogram<u128> = Histogram::read_histogram_from_file(test_file);
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
 
         assert_eq!(histrogram.get_sublog_bits(), 8);
     }
@@ -262,24 +264,24 @@ mod tests {
     #[test]
     fn read_test_hist_for_histogram_length() {
         let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/test.hist");
-        let histrogram: Histogram<u128> = Histogram::read_histogram_from_file(test_file);
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
 
-        assert_eq!(histrogram.get_histgram_vec().len(), 14592);
+        assert_eq!(histrogram.get_histogram_vec().len(), 14592);
     }
 
     #[test]
     fn read_test_hist_for_first_values() {
         let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/test.hist");
-        let histrogram: Histogram<u128> = Histogram::read_histogram_from_file(test_file);
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
         let first_values: Vec<u128> = vec![1, 2, 3, 4, 3, 2, 1, 0];
 
-        assert_eq!(histrogram.get_histgram_vec()[0..8], first_values[..]);
+        assert_eq!(histrogram.get_histogram_vec()[0..8], first_values[..]);
     }
 
     #[test]
     fn read_ssh_hist_for_sublog_bits() {
         let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/dhcp_10_4_4_71_wireless_rochester_edu_ssh_16563_2019_07_08T10_54_34_56_04_00_82238.hist");
-        let histrogram: Histogram<u128> = Histogram::read_histogram_from_file(test_file);
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
 
         assert_eq!(histrogram.get_sublog_bits(), 8);
     }
@@ -287,17 +289,17 @@ mod tests {
     #[test]
     fn read_ssh_hist_for_histogram_length() {
         let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/dhcp_10_4_4_71_wireless_rochester_edu_ssh_16563_2019_07_08T10_54_34_56_04_00_82238.hist");
-        let histrogram: Histogram<u128> = Histogram::read_histogram_from_file(test_file);
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
 
-        assert_eq!(histrogram.get_histgram_vec().len(), 14592);
+        assert_eq!(histrogram.get_histogram_vec().len(), 14592);
     }
 
     #[test]
     fn read_ssh_hist_for_first_values() {
         let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/dhcp_10_4_4_71_wireless_rochester_edu_ssh_16563_2019_07_08T10_54_34_56_04_00_82238.hist");
-        let histrogram: Histogram<u128> = Histogram::read_histogram_from_file(test_file);
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
         let first_values: Vec<u128> = vec![00, 6750181113855227, 156526102, 3922575107523, 180368130756, 3098870710510, 4650485551176, 874884546544540];
 
-        assert_eq!(histrogram.get_histgram_vec()[0..8], first_values[..]);
+        assert_eq!(histrogram.get_histogram_vec()[0..8], first_values[..]);
     }
 }
