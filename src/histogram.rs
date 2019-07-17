@@ -7,7 +7,7 @@ Adapted from 'https://github.com/danielbusaba/histogram'.
 
 
 pub struct Histogram {
-    sublog_bits: u64,
+    _sublog_bits: u64,
     // Stores sublog bits
     values: Vec<u128>,      // Stores frequency values for histogram
 }
@@ -57,7 +57,7 @@ impl Histogram {
     fn new_single(sublog_bits: u64) -> Histogram {
         //Creates a histogram with a vector of an appropriate fixed length
         Histogram {
-            sublog_bits,
+            _sublog_bits: sublog_bits,
             values: vec![0; Histogram::sublog_to_histogram_size(sublog_bits) as usize],
         }
     }
@@ -74,64 +74,34 @@ impl Histogram {
     }
 
     /*
+     * Returns copy of internal vector
+     */
+    pub fn get_histogram_vec(&self) -> &Vec<u128> {
+        &self.values
+    }
+
+//    /*
+//     * Retreives the frequency value at a given reuse time.
+//     */
+//    fn get_frequency(&self, reuse_interval: u64) -> u128 {
+//        // Returns the frequency in the reuse time's bucket
+//        self.values[convert_reuse_interval_to_index(self.sublog_bits, reuse_interval) as usize]
+//    }
+//
+//    /*
+//     * Inserts a value into the histogram at a given reuse time
+//     */
+//    fn set_frequency_via_reuse_interval(&mut self, reuse_interval: u64, frequency: u128) {
+//        self.values[convert_reuse_interval_to_index(self.sublog_bits, reuse_interval) as usize] = frequency;
+//    }
+
+    /*
      * Inserts a value into the histogram at a given reuse time
      */
-    pub fn set_frequency_via_index(&mut self, index: usize, frequency: u128) {
+    fn set_frequency_via_index(&mut self, index: usize, frequency: u128) {
         // Sets bucket value to frequency
         self.values[index] = frequency;
     }
-
-    /*
-     * Retreives the frequency value at a given reuse time.
-     */
-    pub fn get_frequency(&self, reuse_interval: u64) -> u128 {
-        // Returns the frequency in the reuse time's bucket
-        self.values[convert_reuse_interval_to_index(self.sublog_bits, reuse_interval) as usize]
-    }
-
-    /*
-     * Returns copy of internal vector
-     */
-    pub fn get_histogram_vec(&self) -> Vec<u128> {
-        self.values.clone()
-    }
-
-    /*
-     * Returns the value of sublog_bits
-     */
-    pub fn get_sublog_bits(&self) -> u64 {
-        self.sublog_bits
-    }
-
-    pub fn add(&mut self, reuse_interval: u64) {
-        //Retrieves old frequency
-        self.values[convert_reuse_interval_to_index(self.sublog_bits, reuse_interval) as usize] += 1;
-    }
-
-    /*
-     * Inserts a value into the histogram at a given reuse time
-     */
-    pub fn set_frequency_via_reuse_interval(&mut self, reuse_interval: u64, frequency: u128) {
-        self.values[convert_reuse_interval_to_index(self.sublog_bits, reuse_interval) as usize] = frequency;
-    }
-}
-
-/*
- * Taken from locas 'histo.h'.
- */
-fn convert_reuse_interval_to_index(sublog_bits: u64, reuse_interval: u64) -> usize {
-    //Ignores values too small to be bucketized
-
-    if reuse_interval < (1 << sublog_bits) {
-        return reuse_interval as usize;
-    }
-
-    let most_significant_bit = (63 - reuse_interval.leading_zeros()) as u64; //Find's value's most significant bit
-    let shift = most_significant_bit - sublog_bits; //Defines shift as difference between most significant bit and sublog bits
-    let mut index = reuse_interval >> shift; //Sets index as value shifted by shift
-    index = index & ((1 << sublog_bits) - 1); //Does a bitwise and with sublog bits number of 1's
-
-    (index + ((shift + 1) << sublog_bits)) as usize //Adds the shift + 1 shifted by the number of sublog bits and to the index
 }
 
 
@@ -150,6 +120,24 @@ mod tests {
     // {
     //     assert_eq!(convert_index_to_value(514, 8), 514);
     // }
+
+    /*
+     * Taken from locas 'histo.h'.
+     */
+    fn convert_reuse_interval_to_index(sublog_bits: u64, reuse_interval: u64) -> usize {
+        //Ignores values too small to be bucketized
+
+        if reuse_interval < (1 << sublog_bits) {
+            return reuse_interval as usize;
+        }
+
+        let most_significant_bit = (63 - reuse_interval.leading_zeros()) as u64; //Find's value's most significant bit
+        let shift = most_significant_bit - sublog_bits; //Defines shift as difference between most significant bit and sublog bits
+        let mut index = reuse_interval >> shift; //Sets index as value shifted by shift
+        index = index & ((1 << sublog_bits) - 1); //Does a bitwise and with sublog bits number of 1's
+
+        (index + ((shift + 1) << sublog_bits)) as usize //Adds the shift + 1 shifted by the number of sublog bits and to the index
+    }
 
     #[test]
     fn test_hash() //Demonstrates bucket usage in HashMap
@@ -174,16 +162,11 @@ mod tests {
     fn test_histogram_insertion() //Tests histogram buckets
     {
         let mut h = Histogram::new_single(8); //Creates a new histogram for given sublog bits and maximum reuse time
-        h.set_frequency_via_reuse_interval(512, 2); //Inserts a value into the same bucket
-        assert_eq!(h.get_frequency(513), 2); //Checks the bucket value
-    }
 
-    #[test]
-    fn test_histogram_addition() //Tests frequency incrementation
-    {
-        let mut h = Histogram::new_single(8); //Creates a new histogram for given sublog bits and maximum reuse time
-        h.add(512); //Adds to 512 bucket
-        assert_eq!(h.get_frequency(512), 1); //Checks frequency at 512
+        h.values[convert_reuse_interval_to_index(h._sublog_bits, 512) as usize] = 2;
+
+        let frequency = h.values[convert_reuse_interval_to_index(h._sublog_bits, 513) as usize];
+        assert_eq!(frequency, 2); //Checks the bucket value
     }
 
     mod bucket {
@@ -228,8 +211,8 @@ mod tests {
         for i in 1..=7
             //Fills each bucket with its bucket size
             {
-                let temp = h1.get_frequency(i);
-                h1.set_frequency_via_reuse_interval(i, temp + 1);
+                let temp = h1.values[convert_reuse_interval_to_index(h1._sublog_bits, i) as usize];
+                h1.values[convert_reuse_interval_to_index(h1._sublog_bits, i) as usize] = temp + 1;
             }
 
         let values = h1.get_histogram_vec(); //Retrieves histogram values
@@ -258,7 +241,7 @@ mod tests {
         let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/test.hist");
         let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
 
-        assert_eq!(histrogram.get_sublog_bits(), 8);
+        assert_eq!(histrogram._sublog_bits, 8);
     }
 
     #[test]
@@ -283,7 +266,7 @@ mod tests {
         let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/dhcp_10_4_4_71_wireless_rochester_edu_ssh_16563_2019_07_08T10_54_34_56_04_00_82238.hist");
         let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
 
-        assert_eq!(histrogram.get_sublog_bits(), 8);
+        assert_eq!(histrogram._sublog_bits, 8);
     }
 
     #[test]

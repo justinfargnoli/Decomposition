@@ -2,16 +2,9 @@ use crate::histogram::Histogram;
 
 pub struct Distribution {
     distribution: Vec<f32>,
-    num_of_bins: usize,
 }
 
 impl Distribution {
-    pub fn new(num_of_access: usize) -> Distribution {
-        Distribution {
-            distribution: Vec::with_capacity(num_of_access),
-            num_of_bins: num_of_access,
-        }
-    }
 
     pub fn build(histogram: Histogram) -> Distribution {
         let num_of_bins: usize = histogram.size();
@@ -23,36 +16,60 @@ impl Distribution {
 
         Distribution {
             distribution,
-            num_of_bins,
         }
     }
 
-    pub fn add_by_ri(&mut self, reuse_interval: usize) {
-        self.distribution[reuse_interval] += 1.0 / self.num_of_bins as f32
-    }
-
-    pub fn get_probability(&self, reuse_interval: usize) -> f32 {
-        self.distribution[reuse_interval]
+    pub fn get_distribution(&self) -> &Vec<f32> {
+        &self.distribution
     }
 }
 
+
 #[cfg(test)]
 pub mod tests {
+    use crate::histogram::Histogram;
+
     use super::*;
 
+    #[allow(unused)]
     #[test]
-    pub fn new_w_correct_capcaity() {
-        let num_of_accesses: usize = 15;
-        let distribution: Distribution = Distribution::new(num_of_accesses);
+    pub fn create_distribution_ssh() {
+        let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/dhcp_10_4_4_71_wireless_rochester_edu_ssh_16563_2019_07_08T10_54_34_56_04_00_82238.hist");
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
+        let distribution: Distribution = Distribution::build(histrogram);
+        assert!(true);
+    }
 
-        assert_eq!(distribution.distribution.capacity(), num_of_accesses)
+    #[allow(unused)]
+    #[test]
+    pub fn create_distribution_test() {
+        let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/test.hist");
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
+        let distribution: Distribution = Distribution::build(histrogram);
+        assert!(true);
     }
 
     #[test]
-    pub fn new_w_correct_length() {
-        let num_of_accesses: usize = 15;
-        let distribution: Distribution = Distribution::new(num_of_accesses);
+    pub fn distribution_values_test() {
+        let test_file: String = String::from("/Users/justinfargnoli/IdeaProjects/decomposition/data/test.hist");
+        let histrogram: Histogram = Histogram::read_histogram_from_file(test_file);
+        let distribution: Distribution = Distribution::build(histrogram);
 
-        assert_eq!(distribution.distribution.len(), 0)
+        let num_of_bins: usize = 14592;
+
+        let recieved_answer: f32 = distribution.get_distribution()[0];
+        let expected_answer: f32 = 1.0 / num_of_bins as f32;
+
+        assert_eq!(recieved_answer, expected_answer);
+
+        let recieved_answer: f32 = distribution.get_distribution()[3];
+        let expected_answer: f32 = 4.0 / num_of_bins as f32;
+
+        assert_eq!(recieved_answer, expected_answer);
+
+        let recieved_answer: f32 = distribution.get_distribution()[10];
+        let expected_answer: f32 = 0.0 / num_of_bins as f32;
+
+        assert_eq!(recieved_answer, expected_answer);
     }
 }
